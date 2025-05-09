@@ -96,20 +96,25 @@ def process_files():
                 print(f"[SKIP] 파일이 아님: {b_file_path}")
                 continue
 
-            num_match = re.search(r'_(\d{2})', b_file)
-            if not num_match:
-                print(f"[SKIP] _숫자 패턴 없음: {b_file}")
-                continue
-            file_num = num_match.group(1)
-
             suffix = ""
             if has_middle:
                 suffix = "_m"
             elif has_high:
                 suffix = "_h"
 
-            new_file_name = f"{b_date}-{b_number}-{b_file.split('.')[0]}{suffix}_{file_num}.{b_file.split('.')[-1]}"
+            # ✅ 🔽 여기부터 파일명 처리 방식 수정됨
+            name_only = os.path.splitext(b_file)[0]  # ex: 'lumi_00'
+            match = re.match(r"(.+)_([0-9]{2})$", name_only)
+            if not match:
+                print(f"[SKIP] 이름 형식 안 맞음: {b_file}")
+                continue
 
+            base_name, file_num = match.groups()
+
+            # ✅ 최종 파일명: 중간에 suffix 삽입, 숫자는 뒤에 유지
+            new_file_name = f"{b_date}-{b_number}-{base_name}{suffix}_{file_num}.{b_file.split('.')[-1]}"
+            # ✅ 🔼 여기까지 수정 완료
+            
             output_subdir = os.path.join(output_root, b_date, file_num)
             os.makedirs(output_subdir, exist_ok=True)
 
