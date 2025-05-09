@@ -8,12 +8,12 @@ import subprocess
 import sys
 
 def select_b_folder():
-    folder = filedialog.askdirectory(title="b 폴더 선택")
+    folder = filedialog.askdirectory(title="컨버팅된 폴더 선택")
     if folder:
         b_folder_var.set(folder)
 
 def select_a_folder():
-    folder = filedialog.askdirectory(title="a 폴더 선택")
+    folder = filedialog.askdirectory(title="원시데이터 폴더 선택")
     if folder:
         a_folder_var.set(folder)
 
@@ -77,8 +77,11 @@ def process_files():
             continue
 
         b_date, b_number = match.groups()
+        
+        # 6자리 b_date → 8자리 a_date (앞에 '20' 붙이기)
+        a_date = '20' + b_date
 
-        a_dir_path = os.path.join(a_root, b_number)
+        a_dir_path = os.path.join(a_root, a_date, "Single", b_number)
         if not os.path.exists(a_dir_path):
             print(f"a폴더에 {b_number} 폴더 없음, 건너뜀")
             continue
@@ -90,10 +93,12 @@ def process_files():
         for b_file in os.listdir(b_dir_path):
             b_file_path = os.path.join(b_dir_path, b_file)
             if not os.path.isfile(b_file_path):
+                print(f"[SKIP] 파일이 아님: {b_file_path}")
                 continue
 
             num_match = re.search(r'_(\d{2})', b_file)
             if not num_match:
+                print(f"[SKIP] _숫자 패턴 없음: {b_file}")
                 continue
             file_num = num_match.group(1)
 
@@ -109,6 +114,8 @@ def process_files():
             os.makedirs(output_subdir, exist_ok=True)
 
             output_file_path = os.path.join(output_subdir, new_file_name)
+            # ✅ 복사 직전 디버깅 로그
+            print(f"[COPY] {b_file_path} → {output_file_path}")
             shutil.copy2(b_file_path, output_file_path)
 
             processed_files += 1
