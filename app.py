@@ -8,7 +8,7 @@ import subprocess
 import sys
 
 def select_b_folder():
-    folder = filedialog.askdirectory(title="컨버팅된 폴더 선택")
+    folder = filedialog.askdirectory(title="컨버트된 폴더 선택")
     if folder:
         b_folder_var.set(folder)
 
@@ -57,7 +57,7 @@ def process_files():
 
     total_files = count_total_files(b_root)
     if total_files == 0:
-        messagebox.showerror("오류", "b 폴더에 처리할 파일이 없습니다.")
+        messagebox.showerror("오류", "컨버트 폴더에 처리할 파일이 없습니다.")
         return
 
     progress_bar["maximum"] = total_files
@@ -98,11 +98,11 @@ def process_files():
 
             suffix = ""
             if has_middle:
-                suffix = "_m"
+                suffix = "_M"
             elif has_high:
-                suffix = "_h"
+                suffix = "_H"
 
-            # ✅ 🔽 여기부터 파일명 처리 방식 수정됨
+            # 파일명 처리
             name_only = os.path.splitext(b_file)[0]  # ex: 'lumi_00'
             match = re.match(r"(.+)_([0-9]{2})$", name_only)
             if not match:
@@ -111,15 +111,14 @@ def process_files():
 
             base_name, file_num = match.groups()
 
-            # ✅ 최종 파일명: 중간에 suffix 삽입, 숫자는 뒤에 유지
+            # 최종 파일명: 중간에 suffix 삽입, 숫자는 뒤에 유지
             new_file_name = f"{b_date}-{b_number}-{base_name}{suffix}_{file_num}.{b_file.split('.')[-1]}"
-            # ✅ 🔼 여기까지 수정 완료
             
             output_subdir = os.path.join(output_root, b_date, file_num)
             os.makedirs(output_subdir, exist_ok=True)
 
             output_file_path = os.path.join(output_subdir, new_file_name)
-            # ✅ 복사 직전 디버깅 로그
+            # 복사 직전 디버깅 로그
             print(f"[COPY] {b_file_path} → {output_file_path}")
             shutil.copy2(b_file_path, output_file_path)
 
@@ -142,18 +141,18 @@ def process_files():
 # ------------------ GUI ------------------
 
 root = tk.Tk()
-root.title("a/b 폴더 파일 매칭 및 복사기")
+root.title("빛공해이미지파일 분류기")
 
 b_folder_var = tk.StringVar()
 a_folder_var = tk.StringVar()
 output_folder_var = tk.StringVar()
 status_var = tk.StringVar()
 
-tk.Label(root, text="b 폴더:").grid(row=0, column=0, sticky='e')
+tk.Label(root, text="컨버트된 폴더:").grid(row=0, column=0, sticky='e')
 tk.Entry(root, textvariable=b_folder_var, width=60).grid(row=0, column=1)
 tk.Button(root, text="선택", command=select_b_folder).grid(row=0, column=2)
 
-tk.Label(root, text="a 폴더:").grid(row=1, column=0, sticky='e')
+tk.Label(root, text="원시데이터 폴더:").grid(row=1, column=0, sticky='e')
 tk.Entry(root, textvariable=a_folder_var, width=60).grid(row=1, column=1)
 tk.Button(root, text="선택", command=select_a_folder).grid(row=1, column=2)
 
