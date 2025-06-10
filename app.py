@@ -10,7 +10,13 @@ import sys
 def select_b_folder():
     folder = filedialog.askdirectory(title="컨버트된 폴더 선택")
     if folder:
-        b_folder_var.set(folder)
+        folder_name = os.path.basename(folder)
+        if re.fullmatch(r"\d{6}", folder_name):
+            confirm = messagebox.askyesno("확인", f"컨버팅된 폴더 날짜가 {folder_name}로 맞습니까?")
+            if confirm:
+                b_folder_var.set(folder)
+        else:
+            messagebox.showerror("오류", "폴더 이름 형식이 틀립니다. 수정해주세요. 예시: 250527")
 
 def select_a_folder():
     folder = filedialog.askdirectory(title="원시데이터 폴더 선택")
@@ -22,13 +28,17 @@ def select_output_folder():
     if folder:
         output_folder_var.set(folder)
 
-def count_total_files(b_root):
+def count_total_files(b_date_path):
     count = 0
-    for b_dir_name in os.listdir(b_root):
-        b_dir_path = os.path.join(b_root, b_dir_name)
+    for b_number in os.listdir(b_date_path):
+        b_dir_path = os.path.join(b_date_path, b_number)
         if os.path.isdir(b_dir_path):
-            count += len([f for f in os.listdir(b_dir_path) if os.path.isfile(os.path.join(b_dir_path, f))])
+            count += len([
+                f for f in os.listdir(b_dir_path)
+                if os.path.isfile(os.path.join(b_dir_path, f))
+            ])
     return count
+
 
 def seconds_to_min_sec(seconds):
     minutes = seconds // 60
@@ -47,15 +57,15 @@ def open_folder(path):
         print(f"폴더 열기 실패: {e}")
 
 def process_files():
-    b_root = b_folder_var.get()
+    b_date_path = b_folder_var.get()  # 이제 사용자가 날짜 폴더 하나만 선택함
     a_root = a_folder_var.get()
     output_root = output_folder_var.get()
 
-    if not all([b_root, a_root, output_root]):
+    if not all([b_date_path, a_root, output_root]):
         messagebox.showerror("오류", "모든 폴더를 선택하세요.")
         return
 
-    total_files = count_total_files(b_root)
+    total_files = count_total_files(b_date_path)
     if total_files == 0:
         messagebox.showerror("오류", "컨버트 폴더에 처리할 파일이 없습니다.")
         return
@@ -67,19 +77,13 @@ def process_files():
     start_time = time.time()
     processed_files = 0
 
-    for b_dir_name in os.listdir(b_root):
-        b_dir_path = os.path.join(b_root, b_dir_name)
+    b_date = os.path.basename(b_date_path)  # 예: '250527'
+    a_date = '20' + b_date  # '250527' → '20250527'
+
+    for b_number in os.listdir(b_date_path):
+        b_dir_path = os.path.join(b_date_path, b_number)
         if not os.path.isdir(b_dir_path):
             continue
-
-        match = re.match(r"(\d{6})-(\d{4})", b_dir_name)
-        if not match:
-            continue
-
-        b_date, b_number = match.groups()
-        
-        # 6자리 b_date → 8자리 a_date (앞에 '20' 붙이기)
-        a_date = '20' + b_date
 
         a_dir_path = os.path.join(a_root, a_date, "Single", b_number)
         if not os.path.exists(a_dir_path):
@@ -102,23 +106,19 @@ def process_files():
             elif has_high:
                 suffix = "_H"
 
-            # 파일명 처리
-            name_only = os.path.splitext(b_file)[0]  # ex: 'lumi_00'
+            name_only = os.path.splitext(b_file)[0]
             match = re.match(r"(.+)_([0-9]{2})$", name_only)
             if not match:
                 print(f"[SKIP] 이름 형식 안 맞음: {b_file}")
                 continue
 
             base_name, file_num = match.groups()
-
-            # 최종 파일명: 중간에 suffix 삽입, 숫자는 뒤에 유지
             new_file_name = f"{b_date}-{b_number}-{base_name}{suffix}_{file_num}.{b_file.split('.')[-1]}"
-            
+
             output_subdir = os.path.join(output_root, b_date, file_num)
             os.makedirs(output_subdir, exist_ok=True)
-
             output_file_path = os.path.join(output_subdir, new_file_name)
-            # 복사 직전 디버깅 로그
+
             print(f"[COPY] {b_file_path} → {output_file_path}")
             shutil.copy2(b_file_path, output_file_path)
 
